@@ -3,7 +3,7 @@ kind: Pod # defines the kind of resources that we will create
 metadata: # helps to identify the resource
   labels:
     run: nginx
-    name: nginx
+  name: nginx
 spec: # defines the actual specification of the resource
   containers: # defines the containers that we will into the pod
   - image: nginx # image that will be used to create the container
