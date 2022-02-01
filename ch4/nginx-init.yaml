@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod # defines the kind of resources that we will create
+metadata: # helps to identify the resource
+  labels:
+    run: nginx
+  name: nginx
+spec: # defines the actual specification of the resource
+  containers: # defines the containers that we will into the pod
+  - image: nginx # image that will be used to create the container
+    imagePullPolicy: Always
+    name: nginx-container
+    volumeMounts:
+    - mountPath: /usr/share/nginx/html
+      name: html-volume
+    resources:
+      limits:
+        memory: "200Mi"
+        cpu: "200m"
+      requests:
+        memory: "100Mi"
+        cpu: "100m"
+  initContainers:
+  - name: init-nginx
+    image: busybox:1.28
+    command: ['sh', '-c', 'mkdir -p /usr/share/nginx/html && wget -O /usr/share/nginx/html/index.html http://example.com']
+    volumeMounts:
+    - mountPath: /usr/share/nginx/html
+      name: html-volume
+  volumes:
+  - name: html-volume
+    emptyDir: {}
+  restartPolicy: Always
+
+
+
+
+
