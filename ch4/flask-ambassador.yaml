@@ -39,7 +39,7 @@ spec:
     volumeMounts:
     - mountPath: /etc/nginx
       name: nginx-volume
-    - mountPaths: /config
+    - mountPath: /config
       name: config
   volumes:
   - name: nginx-volume
