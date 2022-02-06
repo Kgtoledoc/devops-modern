@@ -9,18 +9,11 @@ spec:
   - name: flask-app
     image: kgtoledoc19/python-redis-app
     imagePullPolicy: Always
-  - name: nginx
+  - name: nginx-ambassador
     image: nginx
     volumeMounts:
     - mountPath: /etc/nginx
       name: nginx-volume
-    resources:
-      limits:
-        memory: "200Mi"
-        cpu: "200m"
-      requests:
-        memory: "100Mi"
-        cpu: "100m"
   initContainers:
   - name: init-nginx
     image: busybox:1.28
@@ -50,4 +43,3 @@ spec:
       items:
       - key: "nginx.conf"
         path: "nginx.conf"
-  restartPolicy: Always

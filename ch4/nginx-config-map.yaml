@@ -14,7 +14,7 @@ data:
     }
     stream {
         server {
-            listen 6379;
+            listen     6379;
             proxy_pass stream_redis_backend;
         }
         upstream stream_redis_backend {
