@@ -5,5 +5,5 @@ RUN apk add --no-cache gcc musl-dev linux-headers curl
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 EXPOSE 5000
-COPY app.py app.py
+COPY . .
 CMD ["flask","run"]
