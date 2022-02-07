@@ -1,3 +1,10 @@
-FROM redis
-COPY entrypoint.sh /tmp/
-CMD ["sh", "/tmp/entrypoint.sh"]
+FROM python:3.7-alpine
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+RUN apk --no-cache gcc musl-dev linux-headers
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+EXPOSE 5000
+COPY . .
+CMD ["flask", "run"]
+
