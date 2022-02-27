@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  replicas: 3 # Defines the number of replicas of the Pod matched for the selector to run at a given time
+  selector: # Defines the basis on which ReplicaSet resource will include Pods in it 
+    matchLabels:
+      app: nginx
+  template: # Define the pod template
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
