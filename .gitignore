@@ -1,0 +1,3 @@
+*.tfvars
+.terraform*
+ch6/terraform/azure/*.tfvars
