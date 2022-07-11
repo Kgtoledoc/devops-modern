@@ -1,3 +1,4 @@
 *.tfvars
 .terraform*
 ch6/terraform/azure/*.tfvars
+ch7/terraform-apache-mysql/id_rsa
