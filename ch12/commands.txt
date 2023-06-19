@@ -1,0 +1,184 @@
+I need a cluster created earlier
+## Create an image
+
+docker login -u <your_dockerhub_user>
+docker build -t <your_dockerhub_user>/flask-app-secret:1 .
+docker push <your_dockerhub_user>/flask-app-secret:1
+
+
+# Create the KMS Service
+
+gcloud services enable secretmanager.googleapis.com
+
+gcloud secrets create flask-app-secret --replication-policy="automatic"
+
+gcloud secrets versions add flask-app-secret --data-file=secret.yaml
+
+
+# Accessing to secret and deployment
+
+gcloud secrets versions access latest --secret=flask-app-secret | kubectl apply -f - # It command will create a new secret 
+
+# After of this, apply the maninfest.yaml
+
+kubectl apply -f manifest.yaml
+kubectl get pod
+
+kubectl get svc flask-app
+
+
+## TEST
+
+curl <ip load balancer>
+
+
+
+## CONTAINER VULNERABILITY SCANNING
+
+# Install ANchore Grype
+
+curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh
+
+sudo sh -s -- -b /usr/local/bin
+
+grype version
+
+# Scanning Images
+
+docker build -t flask-app-secret:slim .
+docker build -t flask-app-secret:latest .
+docker build -t flask-app-secret:alpine .
+
+grype flask-app-secret:slim
+grype flask-app-secret:latest
+grype flask-app-secret:alpine
+
+# If dont want allow a High or Critical vulnerability, use the following command
+
+grype -f high flask-app-secret:slim
+
+
+
+## BINARY AUTHORIZATION
+
+# Setting up binary AUTHORIZATION
+
+$ PROJECT_ID=$(gcloud config list \--format 'value(core.project)')
+$ ATTESTOR_NAME=default-attestor
+$ NOTE_ID=default-attestor-note
+$ KMS_KEY_LOCATION=us-central1
+$ KMS_KEYRING_NAME=${ATTESTOR_NAME}_keyring
+$ KMS_KEY_NAME=${ATTESTOR_NAME}_key
+$ KMS_KEY_VERSION=1
+$ KMS_KEY_PURPOSE=asymmetric-signing
+$ KMS_KEY_ALGORITHM=ec-sign-p256-sha256
+$ KMS_PROTECTION_LEVEL=software
+
+
+# Create the attestor note
+
+cat > /tmp/note_payload.json << EOM
+{
+  "name": "projects/${PROJECT_ID}/notes/${NOTE_ID}",
+  "attestation": {
+
+    "hint": {
+
+      "human_readable_name": "Attestor Note"
+
+    }
+
+  }
+
+}
+
+EOM
+
+# Send the attestor note to container analysis
+curl -X POST -H "Content-Type: application/json" \-H "Authorization: Bearer $(gcloud auth print-access-token)" \--data-binary @/tmp/note_payload.json \"https://containeranalysis.googleapis.com/v1\/projects/${PROJECT_ID}/notes/?noteId=${NOTE_ID}"
+
+
+# Create the attestor 
+
+gcloud container binauthz attestors create ${ATTESTOR_NAME} \
+--attestation-authority-note=${NOTE_ID} \
+--attestationauthority-note-project=${PROJECT_ID}
+
+# Setup PKI
+gcloud kms keyrings create ${KMS_KEYRING_NAME} \
+--location ${KMS_KEY_LOCATION}
+
+gcloud kms keys create ${KMS_KEY_NAME} \
+--location ${KMS_KEY_LOCATION} --keyring ${KMS_KEYRING_NAME} \
+--purpose ${KMS_KEY_PURPOSE} \
+--default-algorithm ${KMS_KEY_ALGORITHM} \
+--protection-level ${KMS_PROTECTION_LEVEL}
+
+gcloud container binauthz attestors public-keys add \
+--attestor="${ATTESTOR_NAME}" \
+--keyversion-project="${PROJECT_ID}" \
+--keyversion-location="${KMS_KEY_LOCATION}" \
+--keyversion-keyring="$KMS_KEYRING_NAME}" \
+--keyversion-key="${KMS_KEY_NAME}" \
+--keyversion="${KMS_KEY_VERSION}"
+
+
+# Creating a default binary authorization policy
+
+cat > /tmp/policy.yaml << EOM
+    globalPolicyEvaluationMode: ENABLE
+    defaultAdmissionRule:
+      evaluationMode: REQUIRE_ATTESTATION
+      enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
+      requireAttestationsBy:
+        - projects/${PROJECT_ID}/attestors/${ATTESTOR_NAME}
+    name: projects/${PROJECT_ID}/policy
+EOM
+
+gcloud container binauthz policy import /tmp/policy.yaml
+
+
+## Now try to upload an image into the cluster
+kubectl run flask-app-secret \
+--image docker.io/<your_dockerhub_user>/flask-app-secret:1 \
+--port 5000
+
+ERRORRRRR by bad digest
+
+## Now deploy with a digest
+
+DIGEST=$(docker pull docker.io/<your_dockerhub_user>\
+/flask-app-secret:1 | grep Digest | awk {'print $2'})
+
+
+kubectl run flask-app-secret \
+--image docker.io/<your_dockerhub_user>\
+/flask-app-secret@${DIGEST} \
+--port 5000
+
+EERROR by authorization
+
+# Attesting Images
+
+## Attest the image
+
+gcloud beta container binauthz attestations sign-and-create \
+--artifact-url="docker.io/<your_docker_user>\
+/flask-app-secret@${DIGEST}" \
+--attestor="${ATTESTOR_NAME}" --attestor-\
+project="${PROJECT_ID}" \
+--keyversion-project="${PROJECT_ID}" --keyversion-\
+location="${KMS_KEY_LOCATION}" \
+--keyversion-keyring="${KMS_KEYRING_NAME}" \
+--keyversion-key="${KMS_KEY_NAME}" \
+--keyversion="${KMS_KEY_VERSION}"
+
+# Deploy the image
+
+kubectl run flask-app-secret \
+--image docker.io/<your_dockerhub_user>/\
+flask-app-secret@${DIGEST} \
+--port 5000
+
+# When we use binary authorization, we need add sha256 digest hash instead of tag.
+

@@ -1,0 +1,11 @@
+---
+
+- hosts: default
+
+  become: true
+
+  roles:
+
+    - common
+
+    - apache

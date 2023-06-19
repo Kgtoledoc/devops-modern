@@ -1,0 +1,78 @@
+## Login in VM using ssh
+
+gcloud compute ssh halyard \
+--project=${PROJECT_ID} --zone=uscentral1-f \
+--ssh-flag="-L 9000:localhost:9000" \
+--ssh-flag="-L 8084:localhost:8084"
+
+# Installing halyard and kubectl
+
+curl -LO \
+https://storage.googleapis.com/kubernetes-release/release/\
+$(curl -s https://storage.googleapis.com/\
+kubernetesrelease/release/stable.txt)/bin/linux/amd64/kubectl
+
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/kubectl
+
+kubectl version --client
+
+sudo add-apt-repository ppa:openjdk-r/ppa
+sudo apt update
+sudo apt install openjdk-11-jdk
+
+curl -O https://raw.githubusercontent.com/spinnaker\
+/halyard/master/install/debian/InstallHalyard.sh
+
+sudo bash InstallHalyard.sh
+
+. ~/.bashrc
+
+## Setting up the required credentials
+
+gcloud container clusters get-credentials cluster-1 \
+--zone=us-central1-a
+
+mkdir -p ~/.gcp/gcp.json
+
+gcloud iam service-accounts keys create ~/.gcp/gcp.json \
+--iam-account gcs-service-account@\
+${PROJECT_ID}.iam.gserviceaccount.co
+
+## Setting up the spinnaker configuration
+
+hal config version edit --version $(hal version latest -q)
+
+hal config storage gcs edit \
+--project $(gcloud config get-value project) \
+--json-path ~/.gcp/gcp.json
+
+hal config storage edit --type gcs
+
+## Configure the Docker hub
+
+hal config provider docker-registry enable
+
+hal config provider docker-registry account add \
+my-docker-registry --address index.docker.io \
+--repositories <your_dockerhub_user>\
+/flask-app-gh-actions <your_dockerhub_user>/flask-app
+
+## Setup kubernetes
+
+hal config provider kubernetes enable
+
+hal config provider kubernetes account add my-k8s-account \
+--docker-registries my-docker-registry \
+--context $(kubectlconfig current-context) 
+
+## Deploying Spinnaker
+
+hal config deploy edit --account-name my-k8s-account \
+--type distributed
+
+hal deploy apply
+
+hal deploy connect
+
+

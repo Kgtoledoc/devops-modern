@@ -1,0 +1,61 @@
+## Spinning up GKE
+
+gcloud auth login
+
+gcloud services enable container.googleapis.com
+gcloud services enable iam.googleapis.com
+gcloud services enable cloudresourcemanager.googleapis.com
+
+# Create a three node Cluster 
+
+gcloud container clusters create clister-1 --zone us-central1-a -m e2-standard-2
+
+# Setting up service accounts and permissions
+
+PROJECT_ID=<project_id>
+gcloud iam service-accounts create halyard-service-account --project=${PROJECT_ID} --display-name halyard-service-account
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+--role roles/iam.serviceAccountKeyAdmin \
+--member serviceAccount:halyard-service-account@\
+${PROJECT_ID}.iam.gserviceaccount.com
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+--role roles/container.admin \
+--member serviceAccount:halyard-service-account@\
+${PROJECT_ID}.iam.gserviceaccount.com
+
+## Create service account for Google Cloud Storage
+
+gcloud iam service-accounts create gcs-service-account \
+--project=${PROJECT_ID} --display-name gcs-service-account
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+--role roles/storage.admin \
+--member serviceAccount:gcs-serviceaccount@\
+${PROJECT_ID}.iam.gserviceaccount.com
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+--member serviceAccount:gcs-serviceaccount@\
+${PROJECT_ID}.iam.gserviceaccount.com \
+--role roles/browser
+
+
+## Creating a halyard host VM
+
+gcloud compute instances create halyard \
+--project=${PROJECT_ID} --zone=us-central1-f \
+--scopes=cloud-platform --service-account=halyard\
+-service-account@${PROJECT_ID}.iam.gserviceaccount.com \
+--image-project=ubuntu-os-cloud --image-\
+family=ubuntu-1604-lts --machine-type=e2-standard-4
+
+## Open firewall to ssh and other ports
+
+gcloud compute instances \
+--project=${PROJECT_ID} add-tags halyard --tags=halyard
+
+gcloud compute firewall-rules create allow-halyard-access \
+--target-tags halyard --source-ranges 0.0.0.0/0 \
+--action=allow --direction=ingress \
+--rules tcp:22,tcp:8084,tcp:9000 --priority 50

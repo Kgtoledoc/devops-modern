@@ -1,0 +1,73 @@
+# Principles of GitOps
+
+- it describes the entire system declaratively
+- version desired system state using Git
+- it uses tooling to automatically apply approved changes
+- it uses self-healing agents to alert and correct any divergence
+
+# Why GitOps
+
+- it deploys better software more quickly
+- there is faster recovery from errors
+- it offers better credential management
+- deployments are self-documenting
+- it promotes shared ownership and knowledge
+
+# The branching strategy and GitOps workflow
+
+the push model
+- when you push changes in repository, the pipelines are triggered apply the changes
+the pull model
+- with an operator or agent, contiunously monitor changes in repo and apply the changes
+
+hybrid - implement polling in push based model by scheduling something, such as a cron job
+
+# Structuing the Git repository
+
+- application repository -> 
+- environment repository -> mantain the infrastructure as code and management code
+
+Gitflow -> branching strategies. master branches, hotfixes, release branches, develop and feature branches 
+GitHub flow -> only have a master branch and apply the master branch to different environment
+
+# Declarative infrastructure and config management
+
+1. create a repository gitops-environment
+2. create a workflow
+3. create a service account and 
+
+$ PROJECT_ID=<project_id>
+
+$ gcloud iam service-accounts create gitops-terraform \
+--description="Service Account for GitOps terraform" \
+--display-name="GitOps Terraform"
+
+$ gcloud projects add-iam-policy-binding $PROJECT_ID \
+--member="serviceAccount:gitops-terraform@$PROJECT_ID\
+.iam.gserviceaccount.com" \
+--role="roles/editor"
+
+$ gcloud iam service-accounts keys create key-file \
+--iam-account=gitops-terraform@$PROJECT_ID.iam\
+.gserviceaccount.com
+
+4. add the secret the key-file into the Gihub Actions secret
+
+5. create a GCS bucket as backend
+
+gsutil mb gs://tf-state-gitops-terraform
+
+gcloud services enable iam.googleapis.com container.googleapis.com
+
+6. Push the code to remote
+
+git add -a
+git commit -m "Initial commit'
+git push
+
+7. gcloud container clusters list
+
+push model GitOps
+
+
+

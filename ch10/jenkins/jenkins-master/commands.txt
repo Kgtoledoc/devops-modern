@@ -1,0 +1,51 @@
+## Create a GKE cluster
+gcloud services enable container.googleapis.com
+
+# create a cluster 
+
+gcloud container clusters create cluster-1 \
+--num-nodes 2 --enable-autoscaling \
+--min-nodes 1 --max-nodes 5 --zone us-central1-a
+
+## Create a Dockefile and build the Jenkins Master Image
+
+docker build -t <your_dockerhub_user>/jenkins-master-kaniko .
+
+## Push the image
+
+docker build -t <your_dockerhub_user>/jenkins-master-kaniko .
+
+
+## Create a Dockerfile and build the Jenkins Agent Image
+
+docker build -t <your_dockerhub_user>/jenkins-jnlp-kaniko .
+docker push <your_dockerhub_user>/jenkins-jnlp-kaniko
+
+
+## Apply the manifests for Master
+
+# Create the service account
+kubectl apply -f jenkins-sa-crb.yaml
+
+# Create a PersistentVolume Claim
+kubectl apply -f jenkins-pvc.yaml
+
+# Create a secret regcred
+
+kubectl create secret docker-registry regcred \
+  --dockerserver=https://index.docker.io/v1/ \
+  --docker-username=<username> --docker-password=<password>
+
+## Apply manifest of deployment
+
+kubectl apply -f jenkins-deployment.yaml
+
+## Apply manifest of service
+
+kubectl apply -f jenkins-svc.yaml
+
+## Get the service
+
+kubectl get svc jenkins-service
+
+

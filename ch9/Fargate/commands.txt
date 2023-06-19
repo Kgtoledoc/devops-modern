@@ -1,0 +1,53 @@
+aws iam --region us-east-1 create-role --role-name \
+ecsTaskExecutionRole --assume-role-policy-document \
+file://task-execution-assume-role.json
+
+
+aws iam attach-role-policy --policy-arn \
+arn:aws:iam::aws:policy/service-role\/AmazonECSTaskExecutionRolePolicy \
+--role-name ecsTaskExecutionRole
+
+## Create a service
+
+ecs-cli compose service up --create-log-groups \
+--cluster cluster-1 --launch-type FARGATE
+
+## Browser logs with cli
+
+ecs-cli logs --task-id eb5ff0b96af549dda69136adaac57a59 \
+--cluster cluster-1
+
+## Deleting an ECS service
+
+ecs-cli compose service down --cluster cluster-1
+
+## Creating a Load Balancer
+
+aws elbv2 create-load-balancer --name ecs-alb \
+--subnets <SUBNET-1> <SUBNET-2> \
+--security-groups <SECURITY_GROUP_ID> \
+--region us-east-
+
+## Creating target groups
+
+aws elbv2 create-target-group --name target-group \
+--protocol HTTP --port 80 --target-type ip \
+--vpc-id <VPC_ID> --region us-east-1
+
+## Listener
+
+aws elbv2 create-listener --load-balancer-arn \
+<LOAD_BALANCER_ARN> --protocol HTTP --port 80 \
+--default-actions Type=forward,TargetGroupArn=\
+<TARGET_GROUP_ARN> --region us-east-1
+
+## Start a service with alb
+
+ecs-cli compose service up --create-log-groups \
+--cluster cluster-1 --launch-type FARGATE \
+--target-group-arn <TARGET_GROUP_ARN> \
+--container-name web --container-port 80
+
+## Scale the service 
+
+ecs-cli compose service scale 3 --cluster cluster-1

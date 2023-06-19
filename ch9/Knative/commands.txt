@@ -1,0 +1,78 @@
+## Enable Kubernetes Engine API
+
+gcloud services enable contianer.googleapis.com
+
+## Create cluster 
+
+gcloud contianer clusters create cluster-1 --num-nodes 2 --enable-autoscaling \
+--min-nodes 1 --max-nodes 5 --zone us-central1-a
+
+
+## Install knative
+
+kubectl apply -f https://github.com/knative/serving/\
+release/download/v0.23.1/serving-crds.yaml
+
+kubectl apply -f https://github.com/knative/serving\
+/releases/download/v0.23.1/serving-core.yaml
+
+## Install istio
+
+curl -L https://istio.io/downloadIstio | ISTIO_\VERSION=1.7.0 sh - && cd istio-1.7.0 && export \PATH=$PWD/bin:$PATH
+
+istioctl install --set profile=demo
+
+kubectl label namespace knative-serving \
+istio-injection=enabled
+
+kubectl -n istio-system get service istio-ingressgateway
+
+
+## Install instio controller
+
+kubectl apply -f https://github.com/knative/\
+net-istio/releases/download/v0.23.1/release.yaml
+
+
+## Configure the DNS
+kubectl apply -f https://github.com/knative/serving/releases\
+/download/v0.23.1/serving-default-domain.yaml
+
+## Install the HPA
+
+kubectl apply -f https://github.com/knative/serving/releases\
+/download/v0.23.1/serving-hpa.yaml
+
+
+## Install kn in our pc
+
+sudo curl -Lo /usr/local/bin/kn \
+https://storage.googleapis.com/knativenightly\
+/client/latest/kn-linux-amd64
+
+sudo chmod +x /usr/local/bin/kn
+
+
+## Deploying python app in knative
+
+kn service create py-time --image \
+<your_dockerhub_user>/py-time
+
+## Apply service with declarative yaml
+
+kubectl apply -f py-time-deploy.yaml
+
+## Get the service 
+
+kubectl get ksvc py-time
+
+## Scale the knative service
+
+hey -z 30s -c 500 http://py-time.default.35.226.198.46.sslip.io
+
+review
+
+kubectl get pod
+kubectl get nodes
+
+
